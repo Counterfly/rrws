@@ -55,8 +55,14 @@ if __name__ == '__main__':
            min_depth=50
     )
     print("Fav depth =", fav_depth)
-    #probability_fn = probability_single_depth(fav_depth, 0.01)
 
+    '''
+    Pickle can't serialize a closure function so the workaround
+    is to use functools.partial to essentially bind the first
+    variables to the function call and wait for the remaining ones
+    to invoke the function "full"-y
+    '''
+    #probability_fn = probability_single_depth(fav_depth, 0.01)
     p_fn = functools.partial(probability_fn, 0.01, fav_depth)
     NUM_ITERATIONS = 10
     pool = multiprocessing.Pool(4)
