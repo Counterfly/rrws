@@ -8,48 +8,43 @@ import pandas as pd
 import exceptions
 
 
-def episode_length(sequence_df, scalar, depth, nth_time):
+def episode_length(sequence, scalar, depth, nth_time):
     """
-    Gets the episode length to reach depth `depth` for the `nth_time` using the sequence defined in `sequence_df`
+    Gets the episode length to reach depth `depth` for the `nth_time` using the sequence defined in `strategy`
     which is subsequently scaled by `scalar`.
-    L(scalar*sequence_df, depth, nth_time)
+    L(scalar*strategy, depth, nth_time)
 
     Parameters
     =============
-    :param
+    :param sequence, numpy.array: restart strategy
 
     Returns
     =============
     :return the length of the episode 
     """
-    column_name = list(sequence_df)[0]
     sequence_minimum = math.ceil(depth/float(scalar))
-    df = sequence_df[sequence_df[column_name] >= sequence_minimum]
+    thresholded = series[strategy >= sequence_minimum]
 
-    assert len(df) >= nth_time, "Need to increase length of sequence"
-    df = df.iloc[nth_time-1] * scalar
-    return df.values[0]
+    assert len(thresholded) >= nth_time, "Need to increase length of sequence"
+    return thresholded[nth_time-1] * scalar
 
 
-def hitting_time_index(sequence_df, scalar, depth, nth_time):
+def hitting_time_index(strategy, scalar, depth, nth_time):
     """
-    Gets the index of the sequence value that reaches depth `depth` for the `nth_time` in the sequence defined in `sequence_df` and which is subsequently scaled by `scalar`.
-    Therefore, you can retrieve the episode length by: sequence_df.iloc[hitting_time_index(...)]
+    Gets the index of the sequence value that reaches depth `depth` for the `nth_time` in the sequence defined in `strategy` and which is subsequently scaled by `scalar`.
+    Therefore, you can retrieve the episode length by: strategy.iloc[hitting_time_index(...)]
 
     Return
     =============
     :return 
     """
-    column_name = list(sequence_df)[0]
     sequence_minimum = math.ceil(depth/float(scalar))
-    df = sequence_df[sequence_df[column_name] >= sequence_minimum]
+    thresholded_indices = np.where(strategy >= sequence_minimum)
 
-    assert len(df) >= nth_time, "Need to increase length of sequence"
-    df = df[:nth_time] * scalar
+    assert len(thresholded_indices) >= nth_time, "Need to increase length of sequence"
 
-    # Get index of last row
-    last_index = df.index.values[-1]
-    return last_index
+    # Get index of nth row
+    return thresholded_indices[nth_time - 1]
 
 
 def runtime(scalar, depth, nth_time, sequence_df):
@@ -85,16 +80,17 @@ def find_favourable_runtime_depth(sequence1, sequence2, min_depth=1):
     depth = min_depth
     while True:
         # Get first time each sequence reaches 'depth'
-        last_index = sequence1.where(sequence1 >= min_depth).first_valid_index()
+        last_index = sequence1.where(sequence1 >= depth).first_valid_index()
         if last_index is None:
             raise exceptions.SequenceTooShortException(sequence1, depth)
         sum1 = sequence1[:last_index].sum()
 
-        last_index = sequence2.where(sequence2 >= min_depth).first_valid_index()
+        last_index = sequence2.where(sequence2 >= depth).first_valid_index()
         if last_index is None:
             raise exceptions.SequenceTooShortException(sequence2, depth)
         sum2 = sequence2[:last_index].sum()
 
+        print("depth = ", depth, "sums are ", sum1, sum2)
         if sum1 <= sum2:
             return depth
 
